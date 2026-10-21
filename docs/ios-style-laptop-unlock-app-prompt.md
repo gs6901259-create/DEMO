@@ -1,67 +1,109 @@
-# Product Prompt: FaceKey — iOS-Inspired Laptop Unlock
+# Product Prompt: FaceKey — iOS-Inspired, Cross-Platform Laptop Unlock
 
-Build a polished Windows 11 desktop application and iPhone companion app called **FaceKey** (working name). The product should feel like a premium Apple/iOS experience: quiet, elegant, minimal, glass-like surfaces used sparingly, system-quality typography, subtle motion, rounded corners, coherent icons, and excellent accessibility. Do not copy Apple's logo or pretend this is an official Apple product.
+Build **FaceKey** (working name): a premium Windows 11 laptop security experience with companion apps for **both Android phones and iPhones**. The visual language should be inspired by the clarity and refinement of iOS, while the phone authentication must use each platform's official APIs. FaceKey is an independent product; do not use Apple's logo or imply it is an official Apple product.
 
 ## Product goal
-Make unlocking a Windows laptop feel effortless and premium. Support Windows Hello face/fingerprint sign-in where compatible, plus an optional phone-based approval flow in which the user approves a pending unlock request on their paired phone using Face ID or Touch ID (or the phone's native biometric/passcode fallback). The phone must never transmit fingerprint/face data to the laptop; biometric verification happens locally on the phone, and the app receives only a cryptographic approval result.
+
+Let a user authenticate to their Windows laptop using compatible Windows Hello hardware or approve a fresh laptop authentication request from their paired phone. The phone companion must support Android and iOS:
+- **Android:** AndroidX Biometric / Android BiometricPrompt for supported enrolled biometrics, with Android Keystore-protected signing keys.
+- **iPhone:** Apple's LocalAuthentication for Face ID / Touch ID (and system passcode fallback where supported), with Keychain/Secure Enclave-backed keys where available.
+
+The phone must never transmit fingerprint templates, face templates, or biometric images. Biometrics are verified locally by the phone operating system; FaceKey receives only the result of an authenticated, cryptographically bound approval.
 
 ## Design direction
-- Overall visual system inspired by iOS: SF-like system typography (use the platform system font, with a high-quality cross-platform fallback), generous whitespace, restrained color, carefully layered translucent materials, soft shadows, thin dividers, and 14–24 px corner radii.
-- Palette: warm white / soft graphite, Apple-like blue accent, muted secondary text, semantic green/orange/red; a full dark mode that respects Windows/iOS system appearance.
-- Smooth 180–280 ms transitions, spring-like panel movement, subtle hover/press states, reduced-motion support, no excessive neon/glow, no crowded dashboard, no fake 3D face scanner.
-- Responsive desktop window and phone-first companion screens. Beautiful first-run onboarding, clear empty/loading/success/failure states, polished tray/menu-bar-like Windows notification-area presence, and useful settings.
-- Accessibility: keyboard navigation, visible focus indicators, high contrast option, screen-reader labels, large text support, localization-ready strings.
 
-## Main desktop app screens
-1. **Welcome / Setup** — FaceKey wordmark, simple illustration/icon, one sentence explaining secure laptop access, “Set up FaceKey” primary action, “How it works” secondary action.
-2. **Home / Security status** — large calm status card showing “Laptop protected”, current method, paired phone, last unlock, connection state, and a clear “Lock now” action (only if implemented through supported OS APIs).
-3. **Unlock methods** — Windows Hello face recognition, Windows Hello fingerprint, paired iPhone approval, and Windows PIN/password fallback. Display capability status based on real hardware and configuration; never claim a camera or sensor is supported unless verified.
-4. **Phone pairing** — QR code plus short pairing code, explicit device name, verification on both devices, expiry for pairing challenge, cancel/revoke actions, and clear instructions. Do not use a static QR as a permanent credential.
-5. **Unlock request screen** — polished lock-inspired screen with a face-ring/fingerprint-inspired abstract icon, laptop name, request timestamp, and status text such as “Waiting for your iPhone approval”. The app UI must not replace the genuine Windows sign-in/secure desktop with a simulated login.
-6. **Activity** — locally stored recent unlock requests and approvals with time, method, and device; allow clear-history action.
-7. **Settings** — paired devices, auto-lock/nearby presence preferences, proximity threshold, notification preferences, theme (light/dark/system), privacy controls, security diagnostics, and remove-this-device flow.
-8. **Help & recovery** — test connection, troubleshoot camera/biometric compatibility, revoke paired phone, and always show a reliable Windows sign-in fallback.
+- Premium iOS-inspired visual system: restrained, calm, carefully layered glass-like panels, rounded cards, generous whitespace, subtle borders, soft shadows, native platform typography and coherent icons. Do not make it look like a generic neon hacker dashboard.
+- Palette: warm white, soft graphite, a vivid but restrained blue accent, muted secondary text, and semantic status colors. Support light, dark, and follow-system themes.
+- Smooth 180–280 ms transitions, gentle spring movement, meaningful hover/pressed/focus states, reduced-motion support, and polished loading, offline, error, denied, and success states.
+- Shared design system across Windows, Android, and iOS, but preserve each mobile platform's native biometric dialogs, notification behavior, navigation conventions, and permission prompts.
+- Accessibility: keyboard navigation on desktop, visible focus, screen-reader labels, high contrast, large text, and localization-ready strings.
+- Do not imitate Apple's logo, lock-screen UI so closely that users are confused, or claim FaceKey is an Apple product.
 
-## iPhone companion screens
-- iOS-native-feeling welcome/onboarding.
-- Securely pair this iPhone to a named laptop.
-- Approval screen showing laptop identity, approximate request context, and Approve / Deny actions.
-- Require LocalAuthentication (Face ID / Touch ID / device passcode fallback) immediately before approval. Never collect/store Face ID or Touch ID templates.
-- Device list, revoke device, notification preferences, recent approvals, and privacy/security explanation.
-- Push notifications should be actionable but never approve silently. Require user presence and a fresh cryptographic challenge for every approval.
+## Main Windows desktop app screens
 
-## Core functionality and architecture
-- Target **Windows 11 first**. Build a real desktop app, not merely a website that pretends to unlock Windows. Choose a suitable native Windows approach (WinUI 3/.NET or another well-supported desktop stack) and a native iOS companion (SwiftUI). If using a shared UI framework, preserve native OS authentication APIs.
-- Use Windows Hello / Windows Biometric Framework or supported Windows sign-in integration for native biometric sign-in. The app's own biometric prompt must not be represented as a replacement for Windows sign-in.
-- Important OS limitation: an ordinary user-mode app cannot simply dismiss the Windows lock screen by toggling a local flag. Treat actual pre-login unlocking as a separate OS-integrated component and implement only supported Windows credential-provider / sign-in integration, with documented setup and recovery. If this cannot be completed safely in the first release, build the companion authentication demo and dashboard honestly, but label it “approval prototype” and do not claim it unlocks Windows yet.
-- Phone approval protocol: laptop generates a fresh, random, short-lived challenge; phone verifies laptop identity and challenge; phone requires biometric/passcode confirmation; phone signs the challenge with a device-bound private key protected by the platform secure hardware/keychain where available; laptop validates the signature, expiry, device pairing, nonce uniqueness, and replay protection. Use TLS, authenticated pairing, key rotation/revocation, rate limiting, and audit logs that avoid storing biometric data.
-- Store no raw face images or fingerprints. Do not upload biometric data. Minimize collected data, encrypt secrets at rest, secure IPC, and document threat model and permissions.
-- Require explicit opt-in for proximity-based locking/unlocking. Proximity alone must never silently unlock the computer. Lock on proximity loss can be an optional convenience, with a grace period and recovery controls.
-- Support offline recovery through Windows Hello PIN/password and revoking a lost phone. Never lock users out if the phone is unavailable.
-- Prevent replay, spoofed notifications, unauthorized remote commands, and insecure hard-coded secrets. No default credentials or embedded production API keys.
+1. **Welcome / Setup** — FaceKey wordmark, a minimal security illustration, short value proposition, “Set up FaceKey”, and “How it works”.
+2. **Home / Security status** — “Laptop protected” status, current unlock methods, paired phones, last activity, connection status, and a “Lock now” action only if implemented using supported OS capabilities.
+3. **Unlock methods** — Windows Hello face, Windows Hello fingerprint, paired-phone approval, and Windows PIN/password fallback. Dynamically detect real capabilities; never show unsupported hardware as available.
+4. **Pair a phone** — QR code and short pairing code, device name, verification on both devices, expiring one-time pairing challenge, cancel and revoke actions. Never use a permanent static QR as a credential.
+5. **Unlock request** — Elegant, lock-inspired approval waiting state with laptop name, timestamp, abstract biometric icon, and accurate status such as “Waiting for approval on your phone”. This must not impersonate or replace the real Windows secure sign-in screen.
+6. **Activity history** — Recent requests, approvals, denials, device names, timestamps and methods. Allow the user to clear local history.
+7. **Settings** — Paired devices, optional nearby lock, grace period, notification preferences, theme, privacy controls, diagnostics, and device revocation.
+8. **Help & recovery** — Test connection, check sensor compatibility, revoke a lost phone, and instructions for Windows Hello PIN/password recovery.
+
+## Mobile companion app — Android AND iOS
+
+Create a mobile app available for both platforms. Prefer a shared UI/codebase with Flutter if it speeds delivery, but use the official native authentication and secure-storage APIs through maintained plugins or carefully implemented platform channels. Do not simulate native biometrics.
+
+### Shared phone features
+- First-run setup and simple, secure onboarding.
+- Pair the phone with a named Windows laptop by scanning the QR code or entering a short-lived pairing code.
+- A clear approval request showing the verified laptop name, request time, and context before showing Approve / Deny.
+- Recent approvals and denials, paired-device list, notification settings, help, lost-phone revocation, and privacy explanation.
+- Actionable notifications may open a request screen, but must never silently approve a request. Require the user to unlock/authenticate and approve explicitly.
+- Show precise permission and biometric capability states. If the device has no supported biometric enrolled, offer a documented system device-credential fallback only where safe and supported; otherwise decline phone approval and retain Windows fallback.
+
+### Android-specific requirements
+- Use AndroidX Biometric / BiometricPrompt with an allowed authenticator policy appropriate to the cryptographic key and security goal.
+- Use Android Keystore for device-bound private keys; require user authentication for key use where supported.
+- Handle Android version differences, manufacturer variations, unavailable hardware, unenrolled biometrics, biometric lockout, device credential fallback, app backgrounding, and notification permission denial.
+- Only accept biometric strength that satisfies the design's security policy. Do not assume every Android face unlock is strong enough for cryptographic approval; query actual platform capability and explain unsupported cases.
+- Request only the Android permissions actually needed. Avoid continuous location collection. If Bluetooth or nearby-device access is used, explain it and make it optional.
+- Follow Android app signing, secure storage, and release-build practices. No hard-coded secrets.
+
+### iPhone-specific requirements
+- Use Apple's LocalAuthentication API for Face ID / Touch ID and allowed system passcode fallback.
+- Store device keys in Keychain and use Secure Enclave-backed keys where available and suitable.
+- Configure the necessary Face ID usage description and handle user cancellation, lockout, missing hardware, and fallback.
+- Never access or store biometric templates.
+
+## Secure approval protocol
+
+- Laptop generates a fresh, random, single-use, short-lived challenge for each request.
+- Phone verifies the paired laptop identity and challenge context before prompting the user.
+- After explicit approval and successful native local authentication, the phone signs that exact challenge with its device-bound private key.
+- Laptop validates the signature, expiry, device pairing status, challenge uniqueness, and replay protection before accepting it.
+- Use TLS, authenticated pairing, appropriate rate limits, key rotation and revocation, secure IPC, encrypted secret storage, and privacy-preserving logs.
+- Reject expired, duplicated, malformed, revoked, or mismatched challenges. Never trust notification text alone as authorization.
+- No biometric data, passcodes, or reusable private keys may be sent to the laptop or a server. Minimize telemetry and document data flows and retention.
+
+## Windows security and OS limitations
+
+- Target Windows 11 first, with a real desktop application using an appropriate native stack such as WinUI 3/.NET.
+- Use Windows Hello / Windows Biometric Framework for supported in-app authentication and investigate supported Windows sign-in integration for genuine pre-login unlock.
+- An ordinary desktop app cannot simply dismiss the Windows lock screen. True pre-login authentication is a separate OS-integrated Windows credential-provider/sign-in project and must be implemented only using supported mechanisms, with a threat model and recovery tests.
+- If true pre-login integration is not safely completed, ship the desktop + phone pairing/approval experience as a clearly labelled **approval prototype**, and do not claim that tapping Approve actually unlocks the real Windows sign-in screen.
+- Never weaken, bypass, or disable Windows security. Keep Windows Hello PIN/password recovery usable at all times.
+- Proximity detection may optionally lock the laptop after a grace period, but proximity alone must never unlock it.
 
 ## Recommended implementation milestones
-1. Build the visual shell and responsive screen states with realistic demo data clearly marked as demo.
-2. Implement desktop-to-iPhone pairing with QR + expiring challenge.
-3. Implement challenge signing and biometric-gated approval on iPhone.
-4. Add genuine Windows Hello capability detection and app authentication.
-5. Investigate supported Windows sign-in integration for true pre-login unlock; ship only when security/recovery testing is complete.
-6. Add tests for expired challenges, repeated/replayed approvals, revoked devices, offline phone, notification denial, failed biometrics, app restarts, and account recovery.
+
+1. Inspect the existing repository, preserve working features, and build the polished Windows desktop shell with clearly marked demo states.
+2. Build the shared Android/iOS companion UI and platform-specific capability detection.
+3. Implement secure QR pairing with expiring challenge and two-sided confirmation.
+4. Implement platform biometric authentication and device-bound challenge signing for Android and iOS.
+5. Implement secure desktop verification, revocation and replay protection.
+6. Add real Windows Hello capability detection and app authentication.
+7. Investigate actual Windows pre-login integration separately; do not mark it complete until it works through supported OS mechanisms and is recovery-tested.
+8. Test expired/replayed requests, revoked or lost phones, offline states, denied notifications, biometric failure/lockout, app restarts, clock changes, pairing cancellation, multiple paired phones, and recovery.
 
 ## Deliverables
-- Working repository with clean architecture and readable code.
-- README with setup/run instructions for Windows and iOS, required tooling, hardware requirements, and a feature-availability table.
-- Architecture diagram, threat model, data-flow description, and pairing/unpairing flow.
-- Tests for authentication and pairing logic.
-- Never fake successful biometric authentication in production. Provide a clearly isolated demo mode only for UI previews and automated tests.
+
+- Working repository with readable, modular code and setup instructions.
+- Windows desktop application, Android build, and iOS project/build instructions.
+- README with platform prerequisites, supported hardware/OS table, build/run steps, and a clear feature-status matrix.
+- Architecture diagram, threat model, data-flow description, pairing and revocation documentation.
+- Unit/integration tests for pairing, challenge signatures, expiry, revocation, and replay attempts.
+- Clearly isolated demo mode for UI previews/tests only. Never fake a successful biometric result in production.
 
 ## Acceptance criteria
-- The app looks and feels like a premium, consistent iOS-inspired product on both devices.
-- All visible controls do real things; no dead buttons or fake system dialogs.
-- UI accurately shows which unlock methods are actually available on the user's hardware.
-- Face/fingerprint data never leaves the device performing biometric verification.
-- Phone approvals are bound to a fresh challenge, expire quickly, and cannot be replayed.
-- Windows fallback sign-in remains available at all times.
-- Documentation clearly distinguishes a working UI prototype from real OS-level laptop unlocking.
 
-Build this incrementally. Prioritize a polished working vertical slice over a huge set of nonfunctional screens. Before changing an existing codebase, inspect its structure and preserve working features; explain any unsupported requirement instead of simulating it.
+- Consistent, premium iOS-inspired experience across Windows, Android and iPhone, with appropriate native interactions on each platform.
+- Every visible control works; no fake security dialogs or dead buttons.
+- Actual biometric capabilities are detected at runtime; unsupported biometrics are explained honestly.
+- Biometric templates and secrets never leave their device.
+- Every phone approval is explicit, bound to a fresh single-use challenge, expires quickly, and cannot be replayed.
+- A lost or revoked phone cannot approve new requests.
+- Windows fallback sign-in is always documented and available.
+- Product documentation distinguishes a working pairing/approval prototype from genuine OS-level laptop unlocking.
+
+Build an end-to-end vertical slice first instead of many nonfunctional screens. Before changing existing code, inspect the repository and preserve working features. Explain unsupported requirements rather than faking them.
